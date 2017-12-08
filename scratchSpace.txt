@@ -1,0 +1,41 @@
+func (currentCard *card) getCardFromName(cardDatabase *sql.DB, cardNameEnToSearch, languageCode string) {
+	var rows *sql.Rows
+	var err error
+	switch strings.ToLower(languageCode) {
+	case "en":
+		rows, err = cardDatabase.Query("SELECT * FROM main_card_data WHERE main_card_data.name_en = " + cardNameEnToSearch)
+	case "jp":
+		rows, err = cardDatabase.Query("SELECT * FROM main_card_data WHERE main_card_data.name_jp = " + cardNameEnToSearch)
+	default:
+		rows, err = cardDatabase.Query("SELECT foreign_name_table.card_name  ")
+
+	}
+	checkErr(err)
+	defer rows.Close()
+	if rows.Next() {
+		err = rows.Scan(&currentCard.ID, &currentCard.Passcode, &currentCard.NameEN,
+			&currentCard.NameJP, &currentCard.Cardtype, &currentCard.Attribute, &currentCard.LevelOrRank,
+			&currentCard.Scale, &currentCard.Attack, &currentCard.Defence, &currentCard.Material)
+		checkErr(err)
+
+	}
+}
+
+
+func (CurrentApp *App) SearchByNameHandle(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	languageCode := vars["language_code"]
+	cardName := vars["card_name"]
+
+	//if err != ni
+
+}
+
+// //SearchByNameHandle Http Handle to get card my database ID
+// func (CurrentApp *App) SearchByNameHandle(w http.ResponseWriter, r *http.Request) {
+// 	vars := mux.Vars(r)
+
+// 	id := vars["Name"]
+
+// }
