@@ -29,6 +29,7 @@ type card struct {
 
 func (currentCard *card) getCardFromID(cardDatabase *sql.DB, cardIDToSearch int) error {
 	err := setMainCardData("id", strconv.Itoa(cardIDToSearch), cardDatabase, currentCard)
+	//setAuxiliaryData()
 	return err
 }
 
@@ -50,7 +51,7 @@ func setMainCardData(columnName, dataToSearchFor string, cardDatabase *sql.DB, c
 	return err
 }
 func setAuxiliaryData(tableName, columnName string, currentCardData []string, cardDatabase *sql.DB) {
-	rows, err := cardDatabase.Query("SELECT " + columnName + " FROM " + tableName +
+	rows, err := cardDatabase.Query("SELECT name FROM " + tableName +
 		" LEFT JOIN main_card_data ON " + tableName + ".passcode=main_card_data.passcode")
 	checkErr(err)
 	defer rows.Close()
@@ -61,7 +62,7 @@ func setAuxiliaryData(tableName, columnName string, currentCardData []string, ca
 			currentCardData = append(currentCardData, temp.String)
 		}
 	}
-
+	checkErr(err)
 }
 
 func checkErr(err error) {
