@@ -9,6 +9,16 @@ import (
 	//_ "github.com/mattn/go-sqlite3"
 )
 
+var tables = []string{"archtype_table", "attribute_table", "effect_keyword_table", "foreign_name_table", "link_arrow_table"}
+
+type CardNames struct {
+	NameFR sql.NullString `json:"name_fr"`
+	NameDE sql.NullString `json:"name_de"`
+	NameIT sql.NullString `json:"name_it"`
+	NameKR sql.NullString `json:"name_kr"`
+	NamePT sql.NullString `json:"name_pt"`
+	NameES sql.NullString `json:"name_es"`
+}
 type card struct {
 	ID             int            `json:"id"`
 	Passcode       int            `json:"passcode"`
@@ -21,6 +31,7 @@ type card struct {
 	Attack         sql.NullInt64  `json:"attack"`
 	Defence        sql.NullInt64  `json:"defence"`
 	Material       sql.NullString `json:"material"`
+	CardNames      []string       `json:"cardnames"`
 	Attributes     []string       `json:"attributes"`
 	EffectKeyWords []string       `json:"effectkeywords"`
 	LinkArrows     []string       `json:"linkarrows"`
@@ -29,7 +40,12 @@ type card struct {
 
 func (currentCard *card) getCardFromID(cardDatabase *sql.DB, cardIDToSearch int) error {
 	err := setMainCardData("id", strconv.Itoa(cardIDToSearch), cardDatabase, currentCard)
-	//setAuxiliaryData()
+
+	setAuxiliaryData(GetTableNameInstance().Archtype(), currentCard.Archtypes, cardDatabase)
+	setAuxiliaryData(GetTableNameInstance().LinkArrow(), currentCard.LinkArrows, cardDatabase)
+	setAuxiliaryData(GetTableNameInstance().EffectKeyword(), currentCard.EffectKeyWords, cardDatabase)
+	setAuxiliaryData(GetTableNameInstance().Attribute(), currentCard.Attributes, cardDatabase)
+
 	return err
 }
 
@@ -50,7 +66,7 @@ func setMainCardData(columnName, dataToSearchFor string, cardDatabase *sql.DB, c
 	}
 	return err
 }
-func setAuxiliaryData(tableName, columnName string, currentCardData []string, cardDatabase *sql.DB) {
+func setAuxiliaryData(tableName string, currentCardData []string, cardDatabase *sql.DB) {
 	rows, err := cardDatabase.Query("SELECT name FROM " + tableName +
 		" LEFT JOIN main_card_data ON " + tableName + ".passcode=main_card_data.passcode")
 	checkErr(err)
