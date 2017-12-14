@@ -81,6 +81,25 @@ func setAuxiliaryData(tableName string, currentCardData []string, cardDatabase *
 	checkErr(err)
 }
 
+func (currentCard *card) setNames(currentNameData []CardNames, cardDatabase *sql.DB) {
+	rows, err := cardDatabase.Query("SELECT name, contry_code FROM foreign_name_table LEFT JOIN main_card_data " +
+		"ON foreign_name_table.passcode=main_card_data.passcode WHERE " + strconv.Itoa(currentCard.Passcode) +
+		"=main_card_data.passcode")
+	checkErr(err)
+	if rows.Next() {
+		var name sql.NullString
+		var contryCode string
+		err = rows.Scan(&name, &contryCode)
+	}
+}
+
+func dfapfaos(name, contryCode string) {
+	switch contryCode {
+	case "FR":
+
+	}
+}
+
 func checkErr(err error) {
 	if err != nil {
 		log.Fatal(err)
