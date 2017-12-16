@@ -51,18 +51,6 @@ func (currentCard *card) getCardFromPasscode(cardDatabase *sql.DB, cardPasscodeT
 }
 
 func (currentCard *card) getCardFromName(cardDatabase *sql.DB, cardName, contryCode string) error {
-	var err error
-	switch contryCode {
-	case "EN":
-	case "FR":
-	case "DE":
-	case "IT":
-	case "KR":
-	case "PT":
-	case "ES":
-	case "JP":
-
-	}
 
 	return err
 }
@@ -126,12 +114,23 @@ func (currentCard *card) setGlobalCardNames(cardDatabase *sql.DB) {
 
 func GetPasscodeFromName(cardName, contryCode string, cardDatabase *sql.DB) int {
 	var passcode = 0
-	rows, err := cardDatabase.Query("SELECT passcode FROM foreign_name_table WHERE name = " + cardName)
+	var query string
+	switch contryCode {
+	case "EN":
+		query = "SELECT passcode FROM main_card_data WHERE nameEN = " + cardName
+	case "JP":
+		query = "SELECT passcode FROM main_card_data WHERE nameJP = " + cardName
+	default:
+		query = "SELECT passcode FROM foreign_name_table WHERE name = " + cardName
+	}
+	rows, err := cardDatabase.Query(query)
 	checkErr(err)
 	defer rows.Close()
 	if rows.Next() {
 		rows.Scan(&passcode)
 	}
+	// what if jp is null
+	// what if more than one entry with same name
 	return passcode
 }
 
