@@ -5,6 +5,8 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/guregu/null"
+
 	_ "github.com/go-sql-driver/mysql"
 	//_ "github.com/mattn/go-sqlite3"
 )
@@ -12,39 +14,39 @@ import (
 var tables = []string{"archtype_table", "attribute_table", "effect_keyword_table", "foreign_name_table", "link_arrow_table"}
 
 type CardNames struct {
-	NameFR sql.NullString `json:"name_fr"`
-	NameDE sql.NullString `json:"name_de"`
-	NameIT sql.NullString `json:"name_it"`
-	NameKR sql.NullString `json:"name_kr"`
-	NamePT sql.NullString `json:"name_pt"`
-	NameES sql.NullString `json:"name_es"`
+	NameFR null.String `json:"name_fr"`
+	NameDE null.String `json:"name_de"`
+	NameIT null.String `json:"name_it"`
+	NameKR null.String `json:"name_kr"`
+	NamePT null.String `json:"name_pt"`
+	NameES null.String `json:"name_es"`
 }
 type card struct {
-	ID             int            `json:"id"`
-	Passcode       int            `json:"passcode"`
-	NameEN         string         `json:"name_en"`
-	NameJP         sql.NullString `json:"name_jp"`
-	Cardtype       sql.NullString `json:"card_type"`
-	Attribute      sql.NullString `json:"attribute"`
-	LevelOrRank    sql.NullInt64  `json:"level/rank/link"`
-	Scale          sql.NullInt64  `json:"scale"`
-	Attack         sql.NullInt64  `json:"attack"`
-	Defence        sql.NullInt64  `json:"defence"`
-	Material       sql.NullString `json:"material"`
-	CardNames      []string       `json:"cardnames"`
-	Attributes     []string       `json:"attributes"`
-	EffectKeyWords []string       `json:"effectkeywords"`
-	LinkArrows     []string       `json:"linkarrows"`
-	Archtypes      []string       `json:"archtypes"`
+	ID              int         `json:"id"`
+	Passcode        int         `json:"passcode"`
+	NameEN          string      `json:"name_en"`
+	NameJP          null.String `json:"name_jp"`
+	Cardtype        null.String `json:"card_type"`
+	Attribute       null.String `json:"attribute"`
+	LevelOrRank     null.Int    `json:"level/rank/link"`
+	Scale           null.Int    `json:"scale"`
+	Attack          null.Int    `json:"attack"`
+	Defence         null.Int    `json:"defence"`
+	Material        null.String `json:"material"`
+	Attributes      []string    `json:"attributes"`
+	EffectKeyWords  []string    `json:"effectkeywords"`
+	LinkArrows      []string    `json:"linkarrows"`
+	Archtypes       []string    `json:"archtypes"`
+	globalCardNames CardNames   `json:"cardnames"`
 }
 
 func (currentCard *card) getCardFromID(cardDatabase *sql.DB, cardIDToSearch int) error {
 	err := setMainCardData("id", strconv.Itoa(cardIDToSearch), cardDatabase, currentCard)
 
-	setAuxiliaryData(GetTableNameInstance().Archtype(), currentCard.Archtypes, cardDatabase)
-	setAuxiliaryData(GetTableNameInstance().LinkArrow(), currentCard.LinkArrows, cardDatabase)
-	setAuxiliaryData(GetTableNameInstance().EffectKeyword(), currentCard.EffectKeyWords, cardDatabase)
-	setAuxiliaryData(GetTableNameInstance().Attribute(), currentCard.Attributes, cardDatabase)
+	currentCard.Archtypes = currentCard.setAuxiliaryData(GetTableNameInstance().Archtype(), currentCard.Archtypes, cardDatabase)
+	currentCard.LinkArrows = currentCard.setAuxiliaryData(GetTableNameInstance().LinkArrow(), currentCard.LinkArrows, cardDatabase)
+	currentCard.EffectKeyWords = currentCard.setAuxiliaryData(GetTableNameInstance().EffectKeyword(), currentCard.EffectKeyWords, cardDatabase)
+	currentCard.Attributes = currentCard.setAuxiliaryData(GetTableNameInstance().Attribute(), currentCard.Attributes, cardDatabase)
 
 	return err
 }
@@ -66,9 +68,10 @@ func setMainCardData(columnName, dataToSearchFor string, cardDatabase *sql.DB, c
 	}
 	return err
 }
-func setAuxiliaryData(tableName string, currentCardData []string, cardDatabase *sql.DB) {
+func (currentCard *card) setAuxiliaryData(tableName string, currentCardData []string, cardDatabase *sql.DB) []string {
 	rows, err := cardDatabase.Query("SELECT name FROM " + tableName +
-		" LEFT JOIN main_card_data ON " + tableName + ".passcode=main_card_data.passcode")
+		" LEFT JOIN main_card_data ON " + tableName + ".passcode=main_card_data.passcode WHERE main_card_data.passcode = " +
+		strconv.Itoa(currentCard.Passcode))
 	checkErr(err)
 	defer rows.Close()
 	if rows.Next() {
@@ -79,23 +82,42 @@ func setAuxiliaryData(tableName string, currentCardData []string, cardDatabase *
 		}
 	}
 	checkErr(err)
+	return currentCardData
 }
 
 func (currentCard *card) setNames(currentNameData []CardNames, cardDatabase *sql.DB) {
-	rows, err := cardDatabase.Query("SELECT name, contry_code FROM foreign_name_table LEFT JOIN main_card_data " +
-		"ON foreign_name_table.passcode=main_card_data.passcode WHERE " + strconv.Itoa(currentCard.Passcode) +
-		"=main_card_data.passcode")
+	rows, err := cardDatabase.Query("SELECT name, contry_code FROM foreign_name_table LEFT JOIN main_card_data ON" +
+		"foreign_name_table.passcode=main_card_data.passcode WHERE  main_card_data.passcode = " + strconv.Itoa(currentCard.Passcode))
+
 	checkErr(err)
 	if rows.Next() {
-		var name sql.NullString
+		var name null.String
 		var contryCode string
 		err = rows.Scan(&name, &contryCode)
+		currentCard.SetCardNames(name, contryCode)
 	}
 }
 
-func dfapfaos(name, contryCode string) {
+func (currentCard *card) SetCardNames(name null.String, contryCode string) {
 	switch contryCode {
 	case "FR":
+		currentCard.globalCardNames.NameFR = name
+		break
+	case "DE":
+		currentCard.globalCardNames.NameDE = name
+		break
+	case "IT":
+		currentCard.globalCardNames.NameIT = name
+		break
+	case "KR":
+		currentCard.globalCardNames.NameKR = name
+		break
+	case "PT":
+		currentCard.globalCardNames.NamePT = name
+		break
+	case "ES":
+		currentCard.globalCardNames.NameES = name
+		break
 
 	}
 }

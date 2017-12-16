@@ -25,7 +25,7 @@ type App struct {
 func GenerateApp() App {
 	var newApp App
 	// connectToDB
-	db, err := sql.Open("sqlite3", "./data.db")
+	db, err := sql.Open("mysql", "x:x@/card_db")
 	if err != nil {
 		panic(err)
 	}
@@ -77,6 +77,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func (CurrentApp *App) InitalizeRoutes() {
 	CurrentApp.router.HandleFunc("/", Index)
 	CurrentApp.router.HandleFunc("/card/id/{card_id:[0-9]+}", CurrentApp.SearchByIDHandle)
+	//CurrentApp.router.HandleFunc("/card/passcode/{card_id:[0-9]+}", CurrentApp.Ser)
 	//CurrentApp.router.HandleFunc("/card/name/{language_code:[A-Z][A-Z]}/{card_Name}", CurrentApp.SearchByNameHandle)
 	//CurrentApp.router.HandleFunc("/card/archtype/{archtype_name}", CurrentApp.SearchByArchtypeHandle)
 	//CurrentApp.router.HandleFunc("/card/effect/{effect_name}", CurrentApp.SearchByEffectHandle)
