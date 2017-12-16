@@ -47,6 +47,7 @@ func (currentCard *card) getCardFromID(cardDatabase *sql.DB, cardIDToSearch int)
 	currentCard.LinkArrows = currentCard.setAuxiliaryData(GetTableNameInstance().LinkArrow(), currentCard.LinkArrows, cardDatabase)
 	currentCard.EffectKeyWords = currentCard.setAuxiliaryData(GetTableNameInstance().EffectKeyword(), currentCard.EffectKeyWords, cardDatabase)
 	currentCard.Attributes = currentCard.setAuxiliaryData(GetTableNameInstance().Attribute(), currentCard.Attributes, cardDatabase)
+	currentCard.setGlobalCardNames()
 
 	return err
 }
@@ -85,7 +86,7 @@ func (currentCard *card) setAuxiliaryData(tableName string, currentCardData []st
 	return currentCardData
 }
 
-func (currentCard *card) setNames(currentNameData []CardNames, cardDatabase *sql.DB) {
+func (currentCard *card) setGlobalCardNames(currentNameData []CardNames, cardDatabase *sql.DB) {
 	rows, err := cardDatabase.Query("SELECT name, contry_code FROM foreign_name_table LEFT JOIN main_card_data ON" +
 		"foreign_name_table.passcode=main_card_data.passcode WHERE  main_card_data.passcode = " + strconv.Itoa(currentCard.Passcode))
 
@@ -94,31 +95,27 @@ func (currentCard *card) setNames(currentNameData []CardNames, cardDatabase *sql
 		var name null.String
 		var contryCode string
 		err = rows.Scan(&name, &contryCode)
-		currentCard.SetCardNames(name, contryCode)
-	}
-}
+		switch contryCode {
+		case "FR":
+			currentCard.globalCardNames.NameFR = name
+			break
+		case "DE":
+			currentCard.globalCardNames.NameDE = name
+			break
+		case "IT":
+			currentCard.globalCardNames.NameIT = name
+			break
+		case "KR":
+			currentCard.globalCardNames.NameKR = name
+			break
+		case "PT":
+			currentCard.globalCardNames.NamePT = name
+			break
+		case "ES":
+			currentCard.globalCardNames.NameES = name
+			break
 
-func (currentCard *card) SetCardNames(name null.String, contryCode string) {
-	switch contryCode {
-	case "FR":
-		currentCard.globalCardNames.NameFR = name
-		break
-	case "DE":
-		currentCard.globalCardNames.NameDE = name
-		break
-	case "IT":
-		currentCard.globalCardNames.NameIT = name
-		break
-	case "KR":
-		currentCard.globalCardNames.NameKR = name
-		break
-	case "PT":
-		currentCard.globalCardNames.NamePT = name
-		break
-	case "ES":
-		currentCard.globalCardNames.NameES = name
-		break
-
+		}
 	}
 }
 
