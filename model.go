@@ -14,12 +14,12 @@ import (
 var tables = []string{"archtype_table", "attribute_table", "effect_keyword_table", "foreign_name_table", "link_arrow_table"}
 
 type CardNames struct {
-	NameFR null.String `json:"name_fr"`
-	NameDE null.String `json:"name_de"`
-	NameIT null.String `json:"name_it"`
-	NameKR null.String `json:"name_kr"`
-	NamePT null.String `json:"name_pt"`
-	NameES null.String `json:"name_es"`
+	NameFR string `json:"name_fr"`
+	NameDE string `json:"name_de"`
+	NameIT string `json:"name_it"`
+	NameKR string `json:"name_kr"`
+	NamePT string `json:"name_pt"`
+	NameES string `json:"name_es"`
 }
 type card struct {
 	ID              int         `json:"id"`
@@ -47,7 +47,7 @@ func (currentCard *card) getCardFromID(cardDatabase *sql.DB, cardIDToSearch int)
 	currentCard.LinkArrows = currentCard.setAuxiliaryData(GetTableNameInstance().LinkArrow(), currentCard.LinkArrows, cardDatabase)
 	currentCard.EffectKeyWords = currentCard.setAuxiliaryData(GetTableNameInstance().EffectKeyword(), currentCard.EffectKeyWords, cardDatabase)
 	currentCard.Attributes = currentCard.setAuxiliaryData(GetTableNameInstance().Attribute(), currentCard.Attributes, cardDatabase)
-	currentCard.setGlobalCardNames()
+	currentCard.setGlobalCardNames(cardDatabase)
 
 	return err
 }
@@ -61,7 +61,7 @@ func setMainCardData(columnName, dataToSearchFor string, cardDatabase *sql.DB, c
 	rows, err := cardDatabase.Query("SELECT * FROM main_card_data WHERE main_card_data." + columnName + " = " + dataToSearchFor)
 	checkErr(err)
 	defer rows.Close()
-	if rows.Next() {
+	for rows.Next() {
 		err = rows.Scan(&currentCard.ID, &currentCard.Passcode, &currentCard.NameEN,
 			&currentCard.NameJP, &currentCard.Cardtype, &currentCard.Attribute, &currentCard.LevelOrRank,
 			&currentCard.Scale, &currentCard.Attack, &currentCard.Defence, &currentCard.Material)
@@ -75,7 +75,7 @@ func (currentCard *card) setAuxiliaryData(tableName string, currentCardData []st
 		strconv.Itoa(currentCard.Passcode))
 	checkErr(err)
 	defer rows.Close()
-	if rows.Next() {
+	for rows.Next() {
 		var temp sql.NullString
 		err = rows.Scan(&temp)
 		if temp.Valid {
@@ -86,15 +86,16 @@ func (currentCard *card) setAuxiliaryData(tableName string, currentCardData []st
 	return currentCardData
 }
 
-func (currentCard *card) setGlobalCardNames(currentNameData []CardNames, cardDatabase *sql.DB) {
-	rows, err := cardDatabase.Query("SELECT name, contry_code FROM foreign_name_table LEFT JOIN main_card_data ON" +
+func (currentCard *card) setGlobalCardNames(cardDatabase *sql.DB) {
+	rows, err := cardDatabase.Query("SELECT name, contry_code FROM foreign_name_table LEFT JOIN main_card_data ON " +
 		"foreign_name_table.passcode=main_card_data.passcode WHERE  main_card_data.passcode = " + strconv.Itoa(currentCard.Passcode))
-
 	checkErr(err)
-	if rows.Next() {
-		var name null.String
+	defer rows.Close()
+	for rows.Next() {
+		var name string
 		var contryCode string
 		err = rows.Scan(&name, &contryCode)
+		checkErr(err)
 		switch contryCode {
 		case "FR":
 			currentCard.globalCardNames.NameFR = name
