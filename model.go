@@ -13,31 +13,28 @@ import (
 
 var tables = []string{"archtype_table", "attribute_table", "effect_keyword_table", "foreign_name_table", "link_arrow_table"}
 
-type CardNames struct {
-	NameFR string `json:"name_fr"`
-	NameDE string `json:"name_de"`
-	NameIT string `json:"name_it"`
-	NameKR string `json:"name_kr"`
-	NamePT string `json:"name_pt"`
-	NameES string `json:"name_es"`
-}
 type card struct {
-	ID              int         `json:"id"`
-	Passcode        int         `json:"passcode"`
-	NameEN          string      `json:"name_en"`
-	NameJP          null.String `json:"name_jp"`
-	Cardtype        null.String `json:"card_type"`
-	Attribute       null.String `json:"attribute"`
-	LevelOrRank     null.Int    `json:"level/rank/link"`
-	Scale           null.Int    `json:"scale"`
-	Attack          null.Int    `json:"attack"`
-	Defence         null.Int    `json:"defence"`
-	Material        null.String `json:"material"`
-	Attributes      []string    `json:"attributes"`
-	EffectKeyWords  []string    `json:"effectkeywords"`
-	LinkArrows      []string    `json:"linkarrows"`
-	Archtypes       []string    `json:"archtypes"`
-	globalCardNames CardNames   `json:"cardnames"`
+	ID             int         `json:"id"`
+	Passcode       int         `json:"passcode"`
+	NameEN         string      `json:"name_en"`
+	NameJP         null.String `json:"name_jp"`
+	NameFR         null.String `json:"name_fr"`
+	NameDE         null.String `json:"name_de"`
+	NameIT         null.String `json:"name_it"`
+	NameKR         null.String `json:"name_kr"`
+	NamePT         null.String `json:"name_pt"`
+	NameES         null.String `json:"name_es"`
+	Cardtype       null.String `json:"card_type"`
+	Attribute      null.String `json:"attribute"`
+	LevelOrRank    null.Int    `json:"level/rank/link"`
+	Scale          null.Int    `json:"scale"`
+	Attack         null.Int    `json:"attack"`
+	Defence        null.Int    `json:"defence"`
+	Material       null.String `json:"material"`
+	Attributes     []string    `json:"attributes"`
+	EffectKeyWords []string    `json:"effectkeywords"`
+	LinkArrows     []string    `json:"linkarrows"`
+	Archtypes      []string    `json:"archtypes"`
 }
 
 func (currentCard *card) getCardFromID(cardDatabase *sql.DB, cardIDToSearch int) error {
@@ -92,29 +89,23 @@ func (currentCard *card) setGlobalCardNames(cardDatabase *sql.DB) {
 	checkErr(err)
 	defer rows.Close()
 	for rows.Next() {
-		var name string
+		var name null.String
 		var contryCode string
 		err = rows.Scan(&name, &contryCode)
 		checkErr(err)
 		switch contryCode {
 		case "FR":
-			currentCard.globalCardNames.NameFR = name
-			break
+			currentCard.NameFR = name
 		case "DE":
-			currentCard.globalCardNames.NameDE = name
-			break
+			currentCard.NameDE = name
 		case "IT":
-			currentCard.globalCardNames.NameIT = name
-			break
+			currentCard.NameIT = name
 		case "KR":
-			currentCard.globalCardNames.NameKR = name
-			break
+			currentCard.NameKR = name
 		case "PT":
-			currentCard.globalCardNames.NamePT = name
-			break
+			currentCard.NamePT = name
 		case "ES":
-			currentCard.globalCardNames.NameES = name
-			break
+			currentCard.NameES = name
 
 		}
 	}
