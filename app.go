@@ -43,8 +43,6 @@ func (CurrentApp *App) SearchByIDHandle(w http.ResponseWriter, r *http.Request) 
 
 	id := vars["card_id"]
 
-	//fmt.Fprintln(w, "id:", id)
-
 	idAsInt, err := strconv.Atoi(id)
 
 	if err != nil {
@@ -63,6 +61,20 @@ func (CurrentApp *App) SearchByIDHandle(w http.ResponseWriter, r *http.Request) 
 
 }
 
+func (CurrentApp *App) SearchByNameHandle(w http.ResponseWriter, r *http.Request) {
+	pathVariables := mux.Vars(r)
+
+	contryCode := pathVariables["contry_code"]
+	cardName := pathVariables["card_name"]
+	var cardToGet card
+	err := cardToGet.getCardFromName(CurrentApp.cardDatabase, cardName, contryCode)
+	if err != nil {
+		fmt.Fprintln(w, "no card with that found found")
+		fmt.Fprintln(w, err.Error())
+	}
+	json.NewEncoder(w).Encode(cardToGet)
+}
+
 //Listen start listeing on given port number
 func (CurrentApp *App) Listen(portNumber string) {
 	log.Fatal(http.ListenAndServe(":"+portNumber, CurrentApp.router))
@@ -77,8 +89,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func (CurrentApp *App) InitalizeRoutes() {
 	CurrentApp.router.HandleFunc("/", Index)
 	CurrentApp.router.HandleFunc("/card/id/{card_id:[0-9]+}", CurrentApp.SearchByIDHandle)
-	//CurrentApp.router.HandleFunc("/card/passcode/{card_id:[0-9]+}", CurrentApp.Ser)
-	//CurrentApp.router.HandleFunc("/card/name/{language_code:[A-Z][A-Z]}/{card_Name}", CurrentApp.SearchByNameHandle)
+	CurrentApp.router.HandleFunc("/card/passcode/{card_id:[0-9]+}", CurrentApp.SearchByIDHandle)
+	CurrentApp.router.HandleFunc("/card/name/{contry_code:[A-Z][A-Z]}/{card_name}", CurrentApp.SearchByNameHandle)
 	//CurrentApp.router.HandleFunc("/card/archtype/{archtype_name}", CurrentApp.SearchByArchtypeHandle)
 	//CurrentApp.router.HandleFunc("/card/effect/{effect_name}", CurrentApp.SearchByEffectHandle)
 	//CurrentApp.router.HandleFunc("/card/effect/{attribute_name}", CurrentApp.SearchByAttributeHandle)

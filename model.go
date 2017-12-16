@@ -39,18 +39,31 @@ type card struct {
 
 func (currentCard *card) getCardFromID(cardDatabase *sql.DB, cardIDToSearch int) error {
 	err := setMainCardData("id", strconv.Itoa(cardIDToSearch), cardDatabase, currentCard)
-
-	currentCard.Archtypes = currentCard.setAuxiliaryData(GetTableNameInstance().Archtype(), currentCard.Archtypes, cardDatabase)
-	currentCard.LinkArrows = currentCard.setAuxiliaryData(GetTableNameInstance().LinkArrow(), currentCard.LinkArrows, cardDatabase)
-	currentCard.EffectKeyWords = currentCard.setAuxiliaryData(GetTableNameInstance().EffectKeyword(), currentCard.EffectKeyWords, cardDatabase)
-	currentCard.Attributes = currentCard.setAuxiliaryData(GetTableNameInstance().Attribute(), currentCard.Attributes, cardDatabase)
-	currentCard.setGlobalCardNames(cardDatabase)
+	BuildCard(currentCard, cardDatabase)
 
 	return err
 }
 
 func (currentCard *card) getCardFromPasscode(cardDatabase *sql.DB, cardPasscodeToSearch int) error {
 	err := setMainCardData("passcode", strconv.Itoa(cardPasscodeToSearch), cardDatabase, currentCard)
+	BuildCard(currentCard, cardDatabase)
+	return err
+}
+
+func (currentCard *card) getCardFromName(cardDatabase *sql.DB, cardName, contryCode string) error {
+	var err error
+	switch contryCode {
+	case "EN":
+	case "FR":
+	case "DE":
+	case "IT":
+	case "KR":
+	case "PT":
+	case "ES":
+	case "JP":
+
+	}
+
 	return err
 }
 
@@ -109,6 +122,25 @@ func (currentCard *card) setGlobalCardNames(cardDatabase *sql.DB) {
 
 		}
 	}
+}
+
+func GetPasscodeFromName(cardName, contryCode string, cardDatabase *sql.DB) int {
+	var passcode = 0
+	rows, err := cardDatabase.Query("SELECT passcode FROM foreign_name_table WHERE name = " + cardName)
+	checkErr(err)
+	defer rows.Close()
+	if rows.Next() {
+		rows.Scan(&passcode)
+	}
+	return passcode
+}
+
+func BuildCard(currentCard *card, cardDatabase *sql.DB) {
+	currentCard.Archtypes = currentCard.setAuxiliaryData(GetTableNameInstance().Archtype(), currentCard.Archtypes, cardDatabase)
+	currentCard.LinkArrows = currentCard.setAuxiliaryData(GetTableNameInstance().LinkArrow(), currentCard.LinkArrows, cardDatabase)
+	currentCard.EffectKeyWords = currentCard.setAuxiliaryData(GetTableNameInstance().EffectKeyword(), currentCard.EffectKeyWords, cardDatabase)
+	currentCard.Attributes = currentCard.setAuxiliaryData(GetTableNameInstance().Attribute(), currentCard.Attributes, cardDatabase)
+	currentCard.setGlobalCardNames(cardDatabase)
 }
 
 func checkErr(err error) {
