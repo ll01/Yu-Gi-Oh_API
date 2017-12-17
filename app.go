@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -19,6 +20,8 @@ type App struct {
 	cardDatabase *sql.DB
 	router       *mux.Router
 }
+
+var currentBufferWriter http.ResponseWriter
 
 //GenerateApp constructor for App Struct it connects to the database and then creates
 //a new router object
@@ -39,8 +42,8 @@ func GenerateApp() App {
 
 //SearchByIDHandle Http Handle to get card my database ID
 func (CurrentApp *App) SearchByIDHandle(w http.ResponseWriter, r *http.Request) {
+	currentBufferWriter = w
 	vars := mux.Vars(r)
-
 	id := vars["card_id"]
 
 	idAsInt, err := strconv.Atoi(id)
@@ -50,29 +53,30 @@ func (CurrentApp *App) SearchByIDHandle(w http.ResponseWriter, r *http.Request) 
 	} else {
 
 		var c card
-		err := c.getCardFromID(CurrentApp.cardDatabase, idAsInt)
-		if err != nil || c.ID == 0 {
-			fmt.Fprintln(w, "no card with that found found")
-			fmt.Fprintln(w, err.Error())
+		c.getCardFromID(CurrentApp.cardDatabase, idAsInt)
 
-		}
 		json.NewEncoder(w).Encode(c)
 	}
 
 }
 
 func (CurrentApp *App) SearchByNameHandle(w http.ResponseWriter, r *http.Request) {
+	currentBufferWriter = w
 	pathVariables := mux.Vars(r)
 
 	contryCode := pathVariables["contry_code"]
+	contryCode = strings.ToUpper(contryCode)
 	cardName := pathVariables["card_name"]
 	var cardToGet card
-	err := cardToGet.getCardFromName(CurrentApp.cardDatabase, cardName, contryCode)
-	if err != nil {
-		fmt.Fprintln(w, "no card with that found found")
-		fmt.Fprintln(w, err.Error())
-	}
+	cardToGet.getCardFromName(CurrentApp.cardDatabase, cardName, contryCode)
 	json.NewEncoder(w).Encode(cardToGet)
+}
+
+func HandleCardSearchError(err error) {
+	if err != nil {
+		fmt.Fprintln(currentBufferWriter, "no card with that found found")
+		fmt.Fprintln(currentBufferWriter, err.Error())
+	}
 }
 
 //Listen start listeing on given port number
@@ -90,8 +94,8 @@ func (CurrentApp *App) InitalizeRoutes() {
 	CurrentApp.router.HandleFunc("/", Index)
 	CurrentApp.router.HandleFunc("/card/id/{card_id:[0-9]+}", CurrentApp.SearchByIDHandle)
 	CurrentApp.router.HandleFunc("/card/passcode/{card_id:[0-9]+}", CurrentApp.SearchByIDHandle)
-	CurrentApp.router.HandleFunc("/card/name/{contry_code:[A-Z][A-Z]}/{card_name}", CurrentApp.SearchByNameHandle)
-	//CurrentApp.router.HandleFunc("/card/archtype/{archtype_name}", CurrentApp.SearchByArchtypeHandle)
+	CurrentApp.router.HandleFunc("/card/name/{contry_code:[A-Za-z][A-Za-z]}/{card_name}", CurrentApp.SearchByNameHandle)
+	CurrentApp.router.HandleFunc("/card/archtype/{archtype_name}", CurrentApp.SearchByArchtypeHandle)
 	//CurrentApp.router.HandleFunc("/card/effect/{effect_name}", CurrentApp.SearchByEffectHandle)
 	//CurrentApp.router.HandleFunc("/card/effect/{attribute_name}", CurrentApp.SearchByAttributeHandle)
 	//CurrentApp.router.HandleFunc("/card/effect/{link_arrows}", CurrentApp.SearchByLinkArrowsHandle)

@@ -37,25 +37,25 @@ type card struct {
 	Archtypes      []string    `json:"archtypes"`
 }
 
-func (currentCard *card) getCardFromID(cardDatabase *sql.DB, cardIDToSearch int) error {
-	err := setMainCardData("id", strconv.Itoa(cardIDToSearch), cardDatabase, currentCard)
+func (currentCard *card) getCardFromID(cardDatabase *sql.DB, cardIDToSearch int) {
+	setMainCardData("id", strconv.Itoa(cardIDToSearch), cardDatabase, currentCard)
 	BuildCard(currentCard, cardDatabase)
 
-	return err
 }
 
-func (currentCard *card) getCardFromPasscode(cardDatabase *sql.DB, cardPasscodeToSearch int) error {
-	err := setMainCardData("passcode", strconv.Itoa(cardPasscodeToSearch), cardDatabase, currentCard)
+func (currentCard *card) getCardFromPasscode(cardDatabase *sql.DB, cardPasscodeToSearch int) {
+	setMainCardData("passcode", strconv.Itoa(cardPasscodeToSearch), cardDatabase, currentCard)
 	BuildCard(currentCard, cardDatabase)
-	return err
 }
 
-func (currentCard *card) getCardFromName(cardDatabase *sql.DB, cardName, contryCode string) error {
-
-	return err
+func (currentCard *card) getCardFromName(cardDatabase *sql.DB, cardName, contryCode string) {
+	passcode, err := GetPasscodeFromName(cardName, contryCode, cardDatabase)
+	if err == nil {
+		currentCard.getCardFromPasscode(cardDatabase, passcode)
+	}
 }
 
-func setMainCardData(columnName, dataToSearchFor string, cardDatabase *sql.DB, currentCard *card) error {
+func setMainCardData(columnName, dataToSearchFor string, cardDatabase *sql.DB, currentCard *card) {
 	rows, err := cardDatabase.Query("SELECT * FROM main_card_data WHERE main_card_data." + columnName + " = " + dataToSearchFor)
 	checkErr(err)
 	defer rows.Close()
@@ -65,7 +65,7 @@ func setMainCardData(columnName, dataToSearchFor string, cardDatabase *sql.DB, c
 			&currentCard.Scale, &currentCard.Attack, &currentCard.Defence, &currentCard.Material)
 		checkErr(err)
 	}
-	return err
+	HandleCardSearchError(err)
 }
 func (currentCard *card) setAuxiliaryData(tableName string, currentCardData []string, cardDatabase *sql.DB) []string {
 	rows, err := cardDatabase.Query("SELECT name FROM " + tableName +
@@ -112,14 +112,15 @@ func (currentCard *card) setGlobalCardNames(cardDatabase *sql.DB) {
 	}
 }
 
-func GetPasscodeFromName(cardName, contryCode string, cardDatabase *sql.DB) int {
+func GetPasscodeFromName(cardName, contryCode string, cardDatabase *sql.DB) (int, error) {
 	var passcode = 0
 	var query string
+	cardName = "\"" + cardName + "\""
 	switch contryCode {
 	case "EN":
-		query = "SELECT passcode FROM main_card_data WHERE nameEN = " + cardName
+		query = "SELECT passcode FROM main_card_data WHERE name_EN = " + cardName
 	case "JP":
-		query = "SELECT passcode FROM main_card_data WHERE nameJP = " + cardName
+		query = "SELECT passcode FROM main_card_data WHERE name_JP = " + cardName
 	default:
 		query = "SELECT passcode FROM foreign_name_table WHERE name = " + cardName
 	}
@@ -130,8 +131,8 @@ func GetPasscodeFromName(cardName, contryCode string, cardDatabase *sql.DB) int 
 		rows.Scan(&passcode)
 	}
 	// what if jp is null
-	// what if more than one entry with same name
-	return passcode
+
+	return passcode, err
 }
 
 func BuildCard(currentCard *card, cardDatabase *sql.DB) {
